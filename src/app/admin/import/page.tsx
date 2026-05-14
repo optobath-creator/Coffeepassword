@@ -5,12 +5,40 @@ import { db } from "@/lib/firebase/config";
 import { doc, writeBatch, serverTimestamp } from "firebase/firestore";
 import detroitData from "../../../../data/detroit-cafes.json";
 import { Navbar } from "@/components/layout/navbar";
-import { Loader2, Database, CheckCircle } from "lucide-react";
+import { Loader2, Database, CheckCircle, AlertTriangle, Activity } from "lucide-react";
 
 export default function AdminImport() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [done, setDone] = useState(false);
+  const [diagnosticResult, setDiagnosticResult] = useState<string | null>(null);
+  const [diagnosticLoading, setDiagnosticResultLoading] = useState(false);
+
+  const runDiagnostic = async () => {
+    setDiagnosticResultLoading(true);
+    setDiagnosticResult(null);
+    try {
+      // Check if Identity Toolkit API is reachable
+      const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+      const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+        method: 'POST',
+        body: JSON.stringify({ returnSecureToken: true })
+      });
+      const data = await resp.json();
+      
+      if (data.error?.message === "CONFIGURATION_NOT_FOUND") {
+        setDiagnosticResult("❌ Identity Toolkit API is DISABLED or API Key is wrong. Go to Google Cloud Console and enable 'Identity Toolkit API'.");
+      } else if (data.error?.message === "OPERATION_NOT_ALLOWED") {
+        setDiagnosticResult("✅ Connectivity OK! But Google Login specifically is disabled. Enable it in Firebase Auth > Sign-in method.");
+      } else {
+        setDiagnosticResult(`ℹ️ Result: ${data.error?.message || "Connected Successfully"}`);
+      }
+    } catch (err) {
+      setDiagnosticResult("❌ Failed to reach Firebase servers. Check your internet or API Key.");
+    } finally {
+      setDiagnosticResultLoading(false);
+    }
+  };
 
   const startImport = async () => {
     setLoading(true);
@@ -70,25 +98,51 @@ export default function AdminImport() {
             This will upload {detroitData.elements.length} coffee shops to your Firestore database.
           </p>
 
-          {loading ? (
-            <div className="space-y-4">
-              <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-              <p className="font-bold">Importing... {progress}%</p>
-            </div>
-          ) : done ? (
-            <div className="space-y-4">
-              <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-              <p className="font-bold text-green-500">Import Complete!</p>
-              <p className="text-sm">Check your Map Explorer now.</p>
-            </div>
-          ) : (
+          <div className="space-y-4">
+            {diagnosticResult && (
+              <div className="bg-accent/50 p-4 rounded-xl text-xs font-bold text-left space-y-2 border border-primary/20">
+                <p className="flex items-center gap-2">
+                  <Activity className="h-3 w-3" />
+                  Diagnostic Report:
+                </p>
+                <p className="text-muted-foreground leading-relaxed font-mono whitespace-pre-wrap">
+                  {diagnosticResult}
+                </p>
+              </div>
+            )}
+
             <button
-              onClick={startImport}
-              className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-bold hover:opacity-90 transition-opacity"
+              onClick={runDiagnostic}
+              disabled={diagnosticLoading || loading}
+              className="w-full bg-accent text-accent-foreground py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-accent/80 transition-all disabled:opacity-50 border border-border/50 uppercase tracking-widest"
             >
-              Start Detroit Import
+              {diagnosticLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Activity className="h-3 w-3" />}
+              Test Connection
             </button>
-          )}
+
+            <hr className="my-6 border-border/50" />
+
+            {loading ? (
+              <div className="space-y-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+                <p className="font-bold">Importing... {progress}%</p>
+              </div>
+            ) : done ? (
+              <div className="space-y-4">
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+                <p className="font-bold text-green-500">Import Complete!</p>
+                <p className="text-sm">Check your Map Explorer now.</p>
+              </div>
+            ) : (
+              <button
+                onClick={startImport}
+                className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-3 shadow-lg"
+              >
+                <Database className="h-5 w-5" />
+                Start Detroit Import
+              </button>
+            )}
+          </div>
         </div>
       </main>
     </div>
