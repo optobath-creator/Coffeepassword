@@ -1,16 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Coffee, Map, Heart, Info, Menu, X, LogIn } from "lucide-react";
+import { Coffee, Map, Heart, Info, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { AuthModal } from "@/components/auth/auth-modal";
-import { UserDropdown } from "@/components/auth/user-dropdown";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { user, loading } = useAuth();
 
   const navItems = [
     { label: "Explorer", href: "/explorer", icon: Map },
@@ -39,25 +34,10 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
-            
-            {!loading && (
-              user ? (
-                <UserDropdown />
-              ) : (
-                <button 
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="bg-primary text-primary-foreground px-5 py-2 rounded-full text-sm font-bold hover:opacity-90 transition-all flex items-center gap-2 shadow-sm"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Sign In
-                </button>
-              )
-            )}
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-4">
-            {!loading && user && <UserDropdown />}
             <button
               className="p-2"
               onClick={() => setIsOpen(!isOpen)}
@@ -82,24 +62,8 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
-          {!user && (
-            <button 
-              onClick={() => {
-                setIsOpen(false);
-                setIsAuthModalOpen(true);
-              }}
-              className="bg-primary text-primary-foreground px-4 py-3 rounded-xl text-sm font-bold mt-2"
-            >
-              Sign In
-            </button>
-          )}
         </div>
       )}
-
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-      />
     </nav>
   );
 }
