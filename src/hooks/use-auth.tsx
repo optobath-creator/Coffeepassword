@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut,
   User,
@@ -20,7 +22,7 @@ interface AppUser extends User {
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (useRedirect?: boolean) => Promise<void>;
   signInAnonymously: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -32,6 +34,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check for redirect result on load
+    getRedirectResult(auth).catch((error) => {
+      console.error("Error getting redirect result", error);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // Check if user exists in Firestore, if not create
@@ -63,10 +70,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (useRedirect = false) => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      if (useRedirect) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
     } catch (error) {
       console.error("Error signing in with Google", error);
     }

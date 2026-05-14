@@ -39,6 +39,15 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             Continue with Google
           </button>
 
+          <button
+            onClick={async () => {
+              await signInWithGoogle(true);
+            }}
+            className="w-full text-[10px] text-muted-foreground hover:text-primary transition-colors text-center -mt-2 uppercase font-bold tracking-tighter"
+          >
+            Trouble with popups? Use redirect mode
+          </button>
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
