@@ -104,8 +104,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: unknown) {
       console.error("Auth: Sign-in error", error);
       const firebaseError = error as { code?: string; message?: string };
+      
       if (firebaseError.code === "auth/unauthorized-domain") {
         setAuthError("This domain is not authorized in Firebase. Please add it to Authorized Domains in the Firebase Console.");
+      } else if (firebaseError.code === "auth/configuration-not-found" || firebaseError.message?.includes("CONFIGURATION_NOT_FOUND")) {
+        setAuthError("Google Login is not enabled in your Firebase Console. Please go to Authentication > Sign-in method and enable Google.");
       } else {
         setAuthError(firebaseError.message || "An unknown authentication error occurred.");
       }
