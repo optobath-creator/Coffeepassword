@@ -7,54 +7,23 @@ import { CoffeeShop } from "@/types";
 import { MapPin, Search, Filter, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
-const MOCK_SHOPS: CoffeeShop[] = [
-  {
-    id: "1",
-    name: "The Roasted Bean",
-    address: "123 Coffee Lane, Tech City",
-    coordinates: { latitude: 40.7128, longitude: -74.006 },
-    rating: 4.8,
-    wifiAvailability: "Available",
-    features: ["Fast Wi-Fi", "Outlets"],
-    status: "Open",
-    lastUpdated: new Date(),
-  },
-  {
-    id: "2",
-    name: "Caffeine & Code",
-    address: "456 Binary Blvd, Tech City",
-    coordinates: { latitude: 40.72, longitude: -74.01 },
-    rating: 4.5,
-    wifiAvailability: "Available",
-    features: ["Quiet", "Outlets"],
-    status: "Open",
-    lastUpdated: new Date(),
-  },
-  {
-    id: "3",
-    name: "Latte Art Studio",
-    address: "789 Espresso Way, Tech City",
-    coordinates: { latitude: 40.705, longitude: -74.008 },
-    rating: 4.2,
-    wifiAvailability: "Limited",
-    features: ["Outdoor Seating"],
-    status: "Closed",
-    lastUpdated: new Date(),
-  },
-];
-
 export default function Explorer() {
   const [shops, setShops] = useState<CoffeeShop[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedShop, setSelectedShop] = useState<CoffeeShop | null>(null);
 
   useEffect(() => {
-    // Simulate fetching data
-    const timer = setTimeout(() => {
-      setShops(MOCK_SHOPS);
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
+    const fetchShops = async () => {
+      try {
+        const data = await coffeeService.getShops();
+        setShops(data);
+      } catch (err) {
+        console.error("Error fetching shops:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchShops();
   }, []);
 
   return (

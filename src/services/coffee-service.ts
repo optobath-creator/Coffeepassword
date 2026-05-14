@@ -20,10 +20,12 @@ const PASSWORDS_COLLECTION = "wifiPasswords";
 const VOTES_COLLECTION = "votes";
 
 export const coffeeService = {
-  // Fetch nearby shops (simplified for now, real geo-queries need libraries like geofirestore)
+  // Fetch shops
   async getShops(): Promise<CoffeeShop[]> {
     const shopsCol = collection(db, SHOPS_COLLECTION);
-    const shopSnapshot = await getDocs(query(shopsCol, limit(50)));
+    // Increased limit to show more shops on the map
+    const q = query(shopsCol, limit(500));
+    const shopSnapshot = await getDocs(q);
     return shopSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CoffeeShop));
   },
 
