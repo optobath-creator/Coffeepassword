@@ -22,25 +22,26 @@ export default function AdminImport() {
     let batch = writeBatch(db);
 
     for (const el of elements) {
-      if (!el.tags || !el.tags.name) continue;
+      const tags = el.tags as any;
+      if (!tags?.name) continue;
 
       const shopId = `osm-${el.id}`;
       const shopRef = doc(db, "coffeeShops", shopId);
       
-      const lat = el.lat || (el.center && el.center.lat);
-      const lon = el.lon || (el.center && el.center.lon);
+      const lat = el.lat || (el as any).center?.lat;
+      const lon = el.lon || (el as any).center?.lon;
 
       if (!lat || !lon) continue;
 
       batch.set(shopRef, {
-        name: el.tags.name,
-        address: el.tags["addr:full"] || `${el.tags["addr:housenumber"] || ""} ${el.tags["addr:street"] || ""}`.trim() || "Address not listed",
+        name: tags.name,
+        address: tags["addr:full"] || `${tags["addr:housenumber"] || ""} ${tags["addr:street"] || ""}`.trim() || "Address not listed",
         coordinates: { latitude: lat, longitude: lon },
         rating: 4.0,
         wifiAvailability: "Available",
         features: ["Detroit Local"],
         status: "Open",
-        website: el.tags.website || "",
+        website: tags.website || "",
         lastUpdated: serverTimestamp()
       });
 
