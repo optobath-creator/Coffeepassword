@@ -22,6 +22,7 @@ interface AppUser extends User {
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
+  authError: string | null;
   signInWithGoogle: (useRedirect?: boolean) => Promise<void>;
   signInAnonymously: () => Promise<void>;
   logout: () => Promise<void>;
@@ -32,34 +33,52 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log("Auth: Initializing...");
+    
     // Check for redirect result on load
-    getRedirectResult(auth).catch((error) => {
-      console.error("Error getting redirect result", error);
-    });
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          console.log("Auth: Redirect sign-in successful", result.user.email);
+        }
+      })
+      .catch((error) => {
+        console.error("Auth: Redirect error", error);
+        setAuthError(error.message);
+      });
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("Auth: State changed", firebaseUser ? `User: ${firebaseUser.email}` : "No user");
+      
       if (firebaseUser) {
-        // Check if user exists in Firestore, if not create
-        const userDocRef = doc(db, "users", firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        try {
+          const userDocRef = doc(db, "users", firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
 
-        if (!userDoc.exists()) {
-          const newUser = {
-            uid: firebaseUser.uid,
-            displayName: firebaseUser.displayName || "Anonymous Explorer",
-            email: firebaseUser.email,
-            photoURL: firebaseUser.photoURL,
-            reputation: 0,
-            badges: [],
-            createdAt: serverTimestamp(),
-            isAnonymous: firebaseUser.isAnonymous,
-          };
-          await setDoc(userDocRef, newUser);
-          setUser({ ...firebaseUser, ...newUser } as AppUser);
-        } else {
-          setUser({ ...firebaseUser, ...userDoc.data() } as AppUser);
+          if (!userDoc.exists()) {
+            console.log("Auth: Creating new user document...");
+            const newUser = {
+              uid: firebaseUser.uid,
+              displayName: firebaseUser.displayName || "Anonymous Explorer",
+              email: firebaseUser.email,
+              photoURL: firebaseUser.photoURL,
+              reputation: 0,
+              badges: [],
+              createdAt: serverTimestamp(),
+              isAnonymous: firebaseUser.isAnonymous,
+            };
+            await setDoc(userDocRef, newUser);
+            setUser({ ...firebaseUser, ...newUser } as AppUser);
+          } else {
+            setUser({ ...firebaseUser, ...userDoc.data() } as AppUser);
+          }
+        } catch (err: unknown) {
+          console.error("Auth: Firestore sync error", err);
+          setAuthError("Failed to sync user profile.");
+          setUser(firebaseUser as AppUser); // Fallback to basic auth user
         }
       } else {
         setUser(null);
@@ -72,14 +91,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async (useRedirect = false) => {
     const provider = new GoogleAuthProvider();
+    setAuthError(null);
+    console.log(`Auth: Attempting Google sign-in (mode: ${useRedirect ? "redirect" : "popup"})...`);
+    
     try {
       if (useRedirect) {
         await signInWithRedirect(auth, provider);
       } else {
-        await signInWithPopup(auth, provider);
+        const result = await signInWithPopup(auth, provider);
+        console.log("Auth: Popup sign-in successful", result.user.email);
       }
-    } catch (error) {
-      console.error("Error signing in with Google", error);
+    } catch (error: unknown) {
+      console.error("Auth: Sign-in error", error);
+      const firebaseError = error as { code?: string; message?: string };
+      if (firebaseError.code === "auth/unauthorized-domain") {
+        setAuthError("This domain is not authorized in Firebase. Please add it to Authorized Domains in the Firebase Console.");
+      } else {
+        setAuthError(firebaseError.message || "An unknown authentication error occurred.");
+      }
+      throw error;
     }
   };
 
@@ -104,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         loading,
+        authError,
         signInWithGoogle,
         signInAnonymously: loginAnonymously,
         logout,

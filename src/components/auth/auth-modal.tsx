@@ -5,7 +5,7 @@ import { Coffee, X } from "lucide-react";
 import Image from "next/image";
 
 export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { signInWithGoogle, signInAnonymously } = useAuth();
+  const { signInWithGoogle, signInAnonymously, authError } = useAuth();
 
   if (!isOpen) return null;
 
@@ -28,10 +28,22 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         </div>
 
         <div className="space-y-4">
+          {authError && (
+            <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-3 rounded-xl">
+              <p className="text-xs text-red-600 dark:text-red-400 font-medium text-center">
+                {authError}
+              </p>
+            </div>
+          )}
+
           <button
             onClick={async () => {
-              await signInWithGoogle();
-              onClose();
+              try {
+                await signInWithGoogle();
+                onClose();
+              } catch (err) {
+                // Error handled by hook state
+              }
             }}
             className="w-full flex items-center justify-center gap-3 bg-white text-black border border-zinc-200 py-3 rounded-xl font-bold hover:bg-zinc-50 transition-colors shadow-sm"
           >

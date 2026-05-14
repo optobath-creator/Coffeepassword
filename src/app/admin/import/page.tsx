@@ -22,20 +22,22 @@ export default function AdminImport() {
     let batch = writeBatch(db);
 
     for (const el of elements) {
-      const tags = el.tags as any;
+      const tags = el.tags as Record<string, string | undefined>;
       if (!tags?.name) continue;
 
       const shopId = `osm-${el.id}`;
       const shopRef = doc(db, "coffeeShops", shopId);
       
-      const lat = el.lat || (el as any).center?.lat;
-      const lon = el.lon || (el as any).center?.lon;
+      // Use cast for OSM element structure
+      const osmEl = el as { lat?: number; lon?: number; center?: { lat: number; lon: number } };
+      const lat = osmEl.lat || osmEl.center?.lat;
+      const lon = osmEl.lon || osmEl.center?.lon;
 
       if (!lat || !lon) continue;
 
       batch.set(shopRef, {
         name: tags.name,
-        address: tags["addr:full"] || `${tags["addr:housenumber"] || ""} ${tags["addr:street"] || ""}`.trim() || "Address not listed",
+        address: (tags["addr:full"] as string) || `${tags["addr:housenumber"] || ""} ${tags["addr:street"] || ""}`.trim() || "Address not listed",
         coordinates: { latitude: lat, longitude: lon },
         rating: 4.0,
         wifiAvailability: "Available",
