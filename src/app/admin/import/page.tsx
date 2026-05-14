@@ -6,57 +6,65 @@ import { doc, writeBatch, serverTimestamp } from "firebase/firestore";
 import detroitData from "../../../../data/detroit-cafes.json";
 import { Navbar } from "@/components/layout/navbar";
 import { Loader2, Database, CheckCircle } from "lucide-react";
-
 export default function AdminImport() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const startImport = async () => {
     setLoading(true);
-    const elements = detroitData.elements;
-    const total = elements.length;
-    let count = 0;
+    setError(null);
+    try {
+      const elements = detroitData.elements;
+      const total = elements.length;
+      let count = 0;
 
-    // Firestore batches are limited to 500
-    let batch = writeBatch(db);
+      // Firestore batches are limited to 500
+      let batch = writeBatch(db);
 
-    for (const el of elements) {
-      const tags = el.tags as Record<string, string | undefined>;
-      if (!tags?.name) continue;
+      for (const el of elements) {
+        const tags = el.tags as Record<string, string | undefined>;
+        if (!tags?.name) continue;
 
-      const shopId = `osm-${el.id}`;
-      const shopRef = doc(db, "coffeeShops", shopId);
-      
-      const osmEl = el as { lat?: number; lon?: number; center?: { lat: number; lon: number } };
-      const lat = osmEl.lat || osmEl.center?.lat;
-      const lon = osmEl.lon || osmEl.center?.lon;
+        const shopId = `osm-${el.id}`;
+        const shopRef = doc(db, "coffeeShops", shopId);
 
-      if (!lat || !lon) continue;
+        const osmEl = el as { lat?: number; lon?: number; center?: { lat: number; lon: number } };
+        const lat = osmEl.lat || osmEl.center?.lat;
+        const lon = osmEl.lon || osmEl.center?.lon;
 
-      batch.set(shopRef, {
-        name: tags.name,
-        address: (tags["addr:full"] as string) || `${tags["addr:housenumber"] || ""} ${tags["addr:street"] || ""}`.trim() || "Address not listed",
-        coordinates: { latitude: lat, longitude: lon },
-        rating: 4.0,
-        wifiAvailability: "Available",
-        features: ["Detroit Local"],
-        status: "Open",
-        website: tags.website || "",
-        lastUpdated: serverTimestamp()
-      });
+        if (!lat || !lon) continue;
 
-      count++;
-      
-      if (count % 400 === 0 || count === total) {
-        await batch.commit();
-        batch = writeBatch(db);
-        setProgress(Math.round((count / total) * 100));
+        batch.set(shopRef, {
+          name: tags.name,
+          address: (tags["addr:full"] as string) || `${tags["addr:housenumber"] || ""} ${tags["addr:street"] || ""}`.trim() || "Address not listed",
+          coordinates: { latitude: lat, longitude: lon },
+          rating: 4.0,
+          wifiAvailability: "Available",
+          features: ["Detroit Local"],
+          status: "Open",
+          website: tags.website || "",
+          lastUpdated: serverTimestamp()
+        });
+
+        count++;
+
+        if (count % 400 === 0 || count === total) {
+          await batch.commit();
+          batch = writeBatch(db);
+          setProgress(Math.round((count / total) * 100));
+        }
       }
+      setDone(true);
+    } catch (err: any) {
+      console.error("Import error:", err);
+      setError(err.message || "An unknown error occurred during import.");
+    } finally {
+      setLoading(false);
     }
-    setDone(true);
-    setLoading(false);
   };
+
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -70,6 +78,16 @@ export default function AdminImport() {
           </p>
 
           <div className="space-y-4">
+            {error && (
+              <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-4 rounded-xl text-left">
+                <p className="text-xs text-red-600 dark:text-red-400 font-bold mb-1 uppercase tracking-widest">Import Failed</p>
+                <p className="text-sm text-red-700 dark:text-red-300 font-medium leading-relaxed">{error}</p>
+                <p className="mt-3 text-[10px] text-red-500/60 leading-tight">
+                  Hint: Ensure you have "Created a Database" in your Firebase Console under "Firestore Database".
+                </p>
+              </div>
+            )}
+
             {loading ? (
               <div className="space-y-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
