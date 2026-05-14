@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { CoffeeMap } from "@/components/map/coffee-map";
 import { CoffeeCard } from "@/components/map/coffee-card";
 import { CoffeeShop } from "@/types";
+import { coffeeService } from "@/services/coffee-service";
 import { MapPin, Search, Filter, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
