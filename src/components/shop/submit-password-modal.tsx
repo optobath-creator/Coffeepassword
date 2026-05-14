@@ -30,7 +30,6 @@ export function SubmitPasswordModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
     if (!password.trim()) {
       setError("Password is required");
       return;
@@ -40,7 +39,7 @@ export function SubmitPasswordModal({
     setError("");
 
     try {
-      await coffeeService.submitPassword(shopId, password, user.uid, ssid);
+      await coffeeService.submitPassword(shopId, password, user?.uid || "anonymous", ssid);
       setPassword("");
       setSsid("");
       onSuccess();

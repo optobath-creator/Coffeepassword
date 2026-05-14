@@ -22,10 +22,10 @@ export function PasswordCard({
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const handleVote = async (type: "up" | "down" | "confirm" | "fail") => {
-    if (!user || voting) return;
+    if (voting) return;
     setVoting(true);
     try {
-      await coffeeService.voteOnPassword(password.id, user.uid, type);
+      await coffeeService.voteOnPassword(password.id, user?.uid || "anonymous", type);
       onVoteSuccess();
     } catch (err) {
       console.error("Voting error:", err);

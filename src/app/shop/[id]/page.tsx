@@ -102,8 +102,7 @@ export default function ShopDetail({ params }: { params: { id: string } }) {
                 <h2 className="text-2xl font-bold italic tracking-tight">Community Wi-Fi</h2>
                 <button 
                   onClick={() => setIsModalOpen(true)}
-                  disabled={!user}
-                  className="bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 shadow-sm"
+                  className="bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-sm"
                 >
                   <Plus className="h-4 w-4" />
                   Add Password
@@ -126,8 +125,7 @@ export default function ShopDetail({ params }: { params: { id: string } }) {
                   <p className="mb-4">No passwords submitted yet. Be the first to help the community!</p>
                   <button 
                     onClick={() => setIsModalOpen(true)}
-                    disabled={!user}
-                    className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
                   >
                     Share Wi-Fi Password
                   </button>
