@@ -30,10 +30,19 @@ out center;
 `;
 
 async function importData() {
-  console.log("Fetching data from Overpass API...");
+  let elements = [];
+  
   try {
-    const response = await axios.post("https://overpass-api.de/api/interpreter", OVERPASS_QUERY);
-    const elements = response.data.elements;
+    const fs = require('fs');
+    if (fs.existsSync('./data/detroit-cafes.json')) {
+      console.log("Reading data from local JSON file...");
+      const rawData = fs.readFileSync('./data/detroit-cafes.json');
+      elements = JSON.parse(rawData).elements;
+    } else {
+      console.log("Fetching data from Overpass API...");
+      const response = await axios.post("https://overpass-api.de/api/interpreter", OVERPASS_QUERY);
+      elements = response.data.elements;
+    }
     
     console.log(`Found ${elements.length} potential coffee shops.`);
     
